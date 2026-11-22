@@ -99,6 +99,14 @@ export {
 export { createAdapterRegistry } from "./adapters";
 export type { AdapterFactory, AdapterRegistry } from "./adapters";
 
+// Planner step 1: corridor candidates, gated on SEP-6 third-party payout.
+export {
+  hasConfirmedThirdPartyPayout,
+  selectCandidates,
+  type CandidateSelection,
+  type DroppedCandidate,
+} from "./candidates";
+
 // SEP-10 lane check: whether a receiving anchor's login accepts our own key.
 export {
   checkLane,
@@ -108,6 +116,7 @@ export {
 } from "./lane-check";
 export { appendOptionReason, formatOptionReason, summarizeOptionReasons } from "./reasons";
 export type { OptionReasonStep, ReasonedOption, SummarizedOptionReason } from "./reasons";
+export {
   DEFAULT_PARALLEL_DEADLINE_MS,
   formatNoPriceWithinReason,
   priceCandidatesInParallel,
@@ -123,6 +132,7 @@ export type {
 } from "./parallel-pricer";
 
 export { requestLockedOption } from "./firm-quote";
+export type {
   FirmQuoteCandidate,
   FirmQuoteDroppedOption,
   FirmQuoteResult,
@@ -130,6 +140,7 @@ export { requestLockedOption } from "./firm-quote";
   RequestLockedOptionOptions,
 } from "./firm-quote";
 export { filterByCircuitBreaker } from "./breaker-filter";
+export type {
   BreakerDroppedCandidate,
   BreakerFilterCandidate,
   BreakerFilterResult,
@@ -137,6 +148,7 @@ export { filterByCircuitBreaker } from "./breaker-filter";
   BreakerStatusRecord,
 } from "./breaker-filter";
 export { ALL_PRICE_LABELS, filterOptionsByAllowedLabels } from "./label-policy";
+export type {
   AllowedPriceLabel,
   LabelledRouteOption,
   LabelPolicy,
@@ -145,6 +157,7 @@ export { ALL_PRICE_LABELS, filterOptionsByAllowedLabels } from "./label-policy";
 } from "./label-policy";
 
 export { CachedCapabilitiesStore, filterByLimitsAndFields } from "./limits-filter";
+export type {
   LimitsDroppedCandidate,
   LimitsEligibleCandidate,
   LimitsFilterCandidate,

@@ -64,6 +64,20 @@ export const AnchorSchema = AnchorBaseSchema.extend({ endpoints: AnchorEndpoints
 const Sep31DestSchema = AnchorBaseSchema.extend({
   protocol: z.literal("sep31").default("sep31"),
   endpoints: AnchorEndpointsSchema,
+  // Declared as unknown so a manifest that sets them reaches the refinement
+  // below instead of being silently stripped; the field is SEP-6-only (#644).
+  third_party_payout: z.unknown().optional(),
+  third_party_payout_note: z.unknown().optional(),
+}).superRefine((val, ctx) => {
+  for (const field of ["third_party_payout", "third_party_payout_note"] as const) {
+    if (val[field] !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [field],
+        message: `dest.${field} is only permitted on protocol "sep6", got "sep31"`,
+      });
+    }
+  }
 });
 
 const Sep6DestSchema = AnchorBaseSchema.extend({
@@ -76,6 +90,19 @@ const Sep6DestSchema = AnchorBaseSchema.extend({
     quote_server: z.string().url().optional(),
     endpoints_verified_at: AnchorEndpointsSchema.shape.endpoints_verified_at,
   }),
+  /**
+   * Whether this SEP-6 receiving anchor allows paying a third party — a
+   * recipient account the sender does not own (#644, RFC 0004 §5).
+   *
+   * SEP-6 was designed for first-party withdrawals, and an anchor exposes no
+   * machine-readable signal for this permission: `stellar.toml` and `/info`
+   * say nothing about it. So it is a claim a human confirms with the anchor
+   * and records here, never something probed automatically. The router refuses
+   * a SEP-6 corridor unless this is `true` (#645).
+   */
+  third_party_payout: z.boolean().optional(),
+  /** Who confirmed third-party payout support, and when. */
+  third_party_payout_note: z.string().optional(),
 });
 
 const CustomDestSchema = AnchorBaseSchema.extend({
@@ -86,6 +113,18 @@ const CustomDestSchema = AnchorBaseSchema.extend({
     extra: z.record(z.string(), z.string()).default({}),
     endpoints_verified_at: AnchorEndpointsSchema.shape.endpoints_verified_at,
   }),
+  third_party_payout: z.unknown().optional(),
+  third_party_payout_note: z.unknown().optional(),
+}).superRefine((val, ctx) => {
+  for (const field of ["third_party_payout", "third_party_payout_note"] as const) {
+    if (val[field] !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [field],
+        message: `dest.${field} is only permitted on protocol "sep6", got "${val.protocol}"`,
+      });
+    }
+  }
 });
 
 // A discriminated union discriminates before defaults apply, so default an
@@ -430,6 +469,11 @@ export function complianceMethod(corridor: Corridor): ComplianceMethod {
 
 export type Corridor = z.infer<typeof CorridorSchema>;
 export type DestProtocol = "sep31" | "sep6" | `custom:${string}`;
+
+/** True when the corridor may pay a recipient who does not own the sending side of the lane. */
+export function allowsThirdPartyPayout(corridor: Corridor): boolean {
+  return corridor.dest.protocol === "sep6" && corridor.dest.third_party_payout === true;
+}
 export type Sep31Anchor = z.infer<typeof Sep31DestSchema>;
 export type Sep6Anchor = z.infer<typeof Sep6DestSchema>;
 export type CustomAnchor = z.infer<typeof CustomDestSchema>;

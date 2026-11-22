@@ -128,7 +128,10 @@ interface RoutePlanner {
 ### Steps inside `plan()`
 
 1. **Candidates.** Read the corridors the business has configured whose
-   destination matches `destAsset` and `destCountry`.
+   destination matches `destAsset` and `destCountry`. A SEP-6 corridor is only a
+   candidate when its manifest sets `dest.third_party_payout: true`; the planner
+   drops the rest with a reason instead of offering a lane that may refuse the
+   payout. `selectCandidates()` in `@corridor/router` implements this step.
 2. **Evidence.** Keep only anchors with a fresh registry attestation for the
    corridor's protocol. This is the same check `RegistryRouteResolver` makes
    today, with the same rule: unknown is refused, never assumed.
