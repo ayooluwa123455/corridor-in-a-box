@@ -171,7 +171,11 @@ function reconcileStep(protocol: DestProtocol): StepDraft {
 }
 
 function settlementKind(protocol: DestProtocol): PlanSettlement["kind"] {
-  return protocol.startsWith("custom:") ? "adapter_settled" : "stellar_payment";
+  // A wallet route's adapter submits the plain payment itself (no anchor deposit
+  // account), so from the engine's perspective it is adapter-settled.
+  return protocol === "wallet" || protocol.startsWith("custom:")
+    ? "adapter_settled"
+    : "stellar_payment";
 }
 
 /** Build the protocol-aware plan for a validated corridor. */
