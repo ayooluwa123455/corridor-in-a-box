@@ -19,6 +19,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 - `tests/lane-check.test.ts` drives stub anchors that accept and refuse the signed
   challenge, plus server-error, unreachable and no-endpoint cases; it also asserts the
   JWT never reaches the result. Design context in `docs/rfcs/0004-smart-router.md`.
+
 ### Added — error screens for the testnet send app ([#691](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/691))
 
 - `web/components/SendErrorState.tsx` renders a screen for each way a payment cannot go ahead: no routes,
@@ -26,6 +27,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 - `web/lib/send-errors.ts` holds the wording. A failed payment is worded from its error code alone, so
   anchor URLs and upstream response bodies in the raw message are never shown.
 - `tests/web-send-errors.test.ts` covers each state.
+
 ### Added — live crash-resume scenario against the reference anchor ([#677](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/677))
 
 - `pnpm verify:crash-resume` kills the service with `SIGKILL` after the payment has settled on
@@ -33,6 +35,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
   same transaction hash. It also checks Horizon for exactly one matching payment transaction.
 - The `reference-crash-resume` workflow runs it daily and on demand, writes the result to the
   job summary and uploads the service and anchor logs on failure.
+
 ### Added — a schema for `contracts/deployments.json` and the testnet upgrade record ([#701](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/701))
 
 - `contracts/deployments.schema.json` describes deployments and upgrades (wasm hash, transaction
@@ -41,6 +44,16 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 - `contracts/deployments.json` records the 2026-11-17 testnet `upgrade()` of the registry and the
   attester. The hashes were read from the testnet ledger, not estimated.
 - `tests/deployments.test.ts` validates the file and checks that missing or malformed fields fail.
+
+### Changed — `testanchor-sep6` records its blocked payout attempt ([#649](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/649))
+
+- `corridors/testanchor-sep6.corridor.yaml` now records the 2026-11-22 payout attempt: a funded
+  testnet account passed SEP-10 and SEP-12 and opened SEP-6 withdrawal
+  `19a2872f-278c-4867-9931-7e7f82ee67a6`, but it stayed `incomplete` with no
+  `withdraw_anchor_account`, so no Stellar payment could be sent.
+- `/sep6/withdraw-exchange` rejects USDC with HTTP 400 and the transaction's `more_info_url`
+  is the SEP-24 reference UI, whose business-server calls return 401 for the SEP-6 token.
+  No `proof:` block was added, because no payout completed.
 
 ### Fixed — stale documentation and comments
 
