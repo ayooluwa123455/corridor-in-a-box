@@ -99,6 +99,14 @@ export {
 export { createAdapterRegistry } from "./adapters";
 export type { AdapterFactory, AdapterRegistry } from "./adapters";
 
+// Planner step 1: corridor candidates, gated on SEP-6 third-party payout.
+export {
+  hasConfirmedThirdPartyPayout,
+  selectCandidates,
+  type CandidateSelection,
+  type DroppedCandidate,
+} from "./candidates";
+
 // SEP-10 lane check: whether a receiving anchor's login accepts our own key.
 export {
   checkLane,

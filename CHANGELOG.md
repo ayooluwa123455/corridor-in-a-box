@@ -7,6 +7,20 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 
 ## [Unreleased]
 
+### Added — SEP-6 candidates require a confirmed third-party payout ([#645](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/645))
+
+- `selectCandidates(corridors)` in `@corridor/router` is the planner's candidate
+  step: it drops every SEP-6 corridor whose manifest has not set
+  `dest.third_party_payout: true`, and returns each dropped corridor with a
+  plain-language reason. Other protocols pass through. `hasConfirmedThirdPartyPayout()`
+  exposes the same predicate; `pnpm cli plan` is unchanged.
+- `@corridor/manifest` accepts `dest.third_party_payout` (boolean) and
+  `dest.third_party_payout_note` on SEP-6 destinations only, and refuses both on
+  SEP-31, custom and protocol-less manifests ([#644](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/644)).
+- `tests/candidates.test.ts` and the SEP-6 cases in `tests/manifest.test.ts`
+  cover the confirmed, absent and explicit-false cases. Design context in
+  `docs/rfcs/0004-smart-router.md` §5.
+
 ### Added — SEP-10 lane check with the business's own key ([#631](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/631))
 
 - `checkLane(corridor, { signer, fetchImpl?, timeoutMs? })` in `@corridor/router` runs
