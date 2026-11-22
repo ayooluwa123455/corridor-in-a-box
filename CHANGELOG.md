@@ -45,6 +45,16 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
   attester. The hashes were read from the testnet ledger, not estimated.
 - `tests/deployments.test.ts` validates the file and checks that missing or malformed fields fail.
 
+### Changed — `testanchor-sep6` records its blocked payout attempt ([#649](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/649))
+
+- `corridors/testanchor-sep6.corridor.yaml` now records the 2026-11-22 payout attempt: a funded
+  testnet account passed SEP-10 and SEP-12 and opened SEP-6 withdrawal
+  `19a2872f-278c-4867-9931-7e7f82ee67a6`, but it stayed `incomplete` with no
+  `withdraw_anchor_account`, so no Stellar payment could be sent.
+- `/sep6/withdraw-exchange` rejects USDC with HTTP 400 and the transaction's `more_info_url`
+  is the SEP-24 reference UI, whose business-server calls return 401 for the SEP-6 token.
+  No `proof:` block was added, because no payout completed.
+
 ### Fixed — stale documentation and comments
 
 - Docs said no transition enters `refund_pending` and that `refunded` is reachable only when
