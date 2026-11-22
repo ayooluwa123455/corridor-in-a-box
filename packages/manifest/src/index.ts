@@ -78,6 +78,39 @@ const Sep6DestSchema = AnchorBaseSchema.extend({
   }),
 });
 
+/**
+ * The "recipient cashes out" route (RFC 0004 §5): a plain payment to the
+ * recipient's own Stellar wallet. It has no anchor endpoints to confirm — the
+ * corridor declares the asset it delivers, and the caller supplies the
+ * recipient account and memo on the intent. The engine never drives SEP-24;
+ * the recipient cashes out afterwards on their own.
+ */
+const WalletDestSchema = AnchorBaseSchema.extend({
+  protocol: z.literal("wallet"),
+  // A wallet route contacts no anchor, so the endpoint block carries nothing.
+  // It still has a `home_domain` — defaulted, never fetched — because the
+  // manifest's dest block is keyed by one everywhere else and a required field
+  // is cheaper than teaching every reader that this one protocol differs.
+  endpoints: AnchorEndpointsSchema.extend({
+    home_domain: z.string().min(1).default("wallet"),
+  }).default(() => ({ home_domain: "wallet" })),
+});
+
+/**
+ * The per-payment half of a wallet route: which Stellar account receives the
+ * payment, and an optional memo the recipient asked for. Validated here so a
+ * caller sees a field error before a payment is built.
+ */
+export const WalletDestinationSchema = z.object({
+  account: z
+    .string()
+    .regex(/^G[A-Z2-7]{55}$/, "expected a Stellar ed25519 account address (G...)"),
+  memo: z.string().optional(),
+  memoType: z.enum(["text", "hash", "id"]).optional(),
+});
+
+export type WalletDestination = z.infer<typeof WalletDestinationSchema>;
+
 const CustomDestSchema = AnchorBaseSchema.extend({
   protocol: z.string().regex(/^custom:[a-z0-9-]+$/, "expected custom:<lowercase-id>"),
   endpoints: z.object({
@@ -96,7 +129,9 @@ export const DestSchema = z.preprocess(
     raw && typeof raw === "object" && !Array.isArray(raw) && !("protocol" in raw)
       ? { ...raw, protocol: "sep31" }
       : raw,
-  z.discriminatedUnion("protocol", [Sep31DestSchema, Sep6DestSchema]).or(CustomDestSchema),
+  z
+    .discriminatedUnion("protocol", [Sep31DestSchema, Sep6DestSchema, WalletDestSchema])
+    .or(CustomDestSchema),
 );
 
 /**
@@ -429,11 +464,12 @@ export function complianceMethod(corridor: Corridor): ComplianceMethod {
 }
 
 export type Corridor = z.infer<typeof CorridorSchema>;
-export type DestProtocol = "sep31" | "sep6" | `custom:${string}`;
+export type DestProtocol = "sep31" | "sep6" | "wallet" | `custom:${string}`;
+export type WalletAnchor = z.infer<typeof WalletDestSchema>;
 export type Sep31Anchor = z.infer<typeof Sep31DestSchema>;
 export type Sep6Anchor = z.infer<typeof Sep6DestSchema>;
 export type CustomAnchor = z.infer<typeof CustomDestSchema>;
-export type AnchorConfig = Sep31Anchor | Sep6Anchor | CustomAnchor;
+export type AnchorConfig = Sep31Anchor | Sep6Anchor | WalletAnchor | CustomAnchor;
 
 export function protocolOf(anchor: z.infer<typeof DestSchema>): DestProtocol {
   return anchor.protocol as DestProtocol;

@@ -158,6 +158,19 @@ export function anchorCustomerIdOf(party: PartyRef): string | undefined {
   return party.anchorCustomerId || party.sep12Id || undefined;
 }
 
+/**
+ * Where a `protocol: wallet` route delivers: the recipient's own Stellar
+ * account, not an anchor customer record. The corridor declares the asset and
+ * network; the caller supplies this per payment because the recipient owns it
+ * (RFC 0004 §5).
+ */
+export interface WalletDestination {
+  /** Stellar account address (`G...`) that receives the payment. */
+  readonly account: string;
+  readonly memo?: string;
+  readonly memoType?: "text" | "hash" | "id";
+}
+
 export interface PaymentIntent {
   /** Caller-supplied. Two requests with the same key must never settle twice. */
   readonly idempotencyKey: string;
@@ -180,6 +193,12 @@ export interface PaymentIntent {
    * goes to the anchor through SEP-12, never through here.
    */
   readonly destinationFields?: Readonly<Record<string, string>>;
+  /**
+   * The recipient's own Stellar wallet, for a `protocol: wallet` corridor.
+   * Required there; ignored by anchor protocols, which pay out off-chain to a
+   * customer the receiving anchor knows.
+   */
+  readonly wallet?: WalletDestination;
 }
 
 // --- Settlement references ----------------------------------------------

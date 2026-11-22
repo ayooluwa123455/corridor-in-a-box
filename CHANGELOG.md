@@ -7,6 +7,25 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 
 ## [Unreleased]
 
+### Added — wallet route: settlement to a recipient account ([#647](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/647))
+
+- `WalletAdapter` in `@corridor/stellar` implements the anchor seam for a
+  `protocol: wallet` corridor. It opens an `adapter_settled` payment, submits one
+  plain Stellar payment to the recipient's account through the injected
+  `SettlementSubmitter` (so `StellarSettlementSubmitter` keeps the Horizon
+  submission and ledger confirmation), and reports `completed` only after that
+  confirmation. Concurrent or resumed confirms reuse the one submission.
+- `@corridor/manifest` accepts `dest.protocol: wallet` with no anchor endpoints,
+  and exports `WalletDestinationSchema` for the per-payment recipient account,
+  optional memo and memo type. `liveness()` reports the lane verified by
+  construction and `corridor plan` marks settlement as adapter-led
+  ([#646](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/646)).
+- `PaymentIntent.wallet` carries the recipient's account; it is ignored by
+  anchor protocols and required by the wallet adapter.
+- `tests/wallet-adapter.test.ts` drives the adapter with a stubbed submitter:
+  quote, open, ledger-gated completion, idempotent confirm, submit failure,
+  invalid recipient/memo, refund refusal and asset-mismatch refusal.
+
 ### Added — SEP-10 lane check with the business's own key ([#631](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/631))
 
 - `checkLane(corridor, { signer, fetchImpl?, timeoutMs? })` in `@corridor/router` runs
@@ -19,6 +38,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 - `tests/lane-check.test.ts` drives stub anchors that accept and refuse the signed
   challenge, plus server-error, unreachable and no-endpoint cases; it also asserts the
   JWT never reaches the result. Design context in `docs/rfcs/0004-smart-router.md`.
+
 ### Added — error screens for the testnet send app ([#691](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/691))
 
 - `web/components/SendErrorState.tsx` renders a screen for each way a payment cannot go ahead: no routes,
@@ -26,6 +46,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 - `web/lib/send-errors.ts` holds the wording. A failed payment is worded from its error code alone, so
   anchor URLs and upstream response bodies in the raw message are never shown.
 - `tests/web-send-errors.test.ts` covers each state.
+
 ### Added — live crash-resume scenario against the reference anchor ([#677](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/677))
 
 - `pnpm verify:crash-resume` kills the service with `SIGKILL` after the payment has settled on
@@ -33,6 +54,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
   same transaction hash. It also checks Horizon for exactly one matching payment transaction.
 - The `reference-crash-resume` workflow runs it daily and on demand, writes the result to the
   job summary and uploads the service and anchor logs on failure.
+
 ### Added — a schema for `contracts/deployments.json` and the testnet upgrade record ([#701](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/701))
 
 - `contracts/deployments.schema.json` describes deployments and upgrades (wasm hash, transaction
