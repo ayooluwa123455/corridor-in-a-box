@@ -11,6 +11,10 @@ running migrations, and the project's versioning/release policy.
 > Treat this runbook as the plan for a self-run testnet/close-beta pilot, not a
 > claim of production-readiness.
 
+A licensed partner preparing a pilot with real money should work through
+[pilot-readiness.md](./pilot-readiness.md), which puts this runbook, the key-management guide
+and the threat model into one checklist.
+
 ## 0. Adding an anchor to the fleet
 
 `contracts/anchors.json` is the fleet's curated list of anchors. It is **not**
@@ -291,6 +295,36 @@ XLM; this one settles the asset the anchor actually quotes.
 `GET /rate` throw `Buy amount must be greater than zero`, which surfaces as
 `QUOTE_UNAVAILABLE: quote HTTP 502`. `AMOUNT=1.00` reproduces it; the default of
 `10.00` does not.
+
+### `pnpm load-test` — concurrent payments against the reference anchor
+
+```bash
+scripts/reference-anchor.sh up
+scripts/reference-anchor.sh payout-watch &
+CORRIDOR_SIGNER_SECRET=S… pnpm load-test
+```
+
+Sends `CONCURRENCY` (default 100, at most 100) testnet payments of `AMOUNT`
+(default `0.10`) at once through the full corridor lifecycle: SEP-12 customers,
+SEP-38 quote, SEP-31 transaction, Stellar settlement under the per-signer
+sequence lock, and reconciliation. It refuses a `network: public` manifest.
+
+It reports success and failure counts, latency (min, average, p50/p90/p95/p99,
+max) and a failure breakdown, and checks for duplicate settlements twice:
+
+- in the engine's own records: no two payments share a settlement hash;
+- on the ledger: it reads the signer's transactions from Horizon for the run's
+  window and fails if any payment memo was settled by more than one successful
+  transaction.
+
+The report goes to stdout and is appended to `$GITHUB_STEP_SUMMARY` (or
+`SUMMARY_FILE` outside Actions). The run exits non-zero on any failure or
+duplicate.
+
+`.github/workflows/load-test.yml` runs it on demand only (`workflow_dispatch`,
+never scheduled or on pull requests), with the same repository secrets as the
+reference corridor job: `CORRIDOR_SIGNER_SECRET` (a funded testnet account used
+only for this) and `REFERENCE_DISTRIBUTION_SECRET`.
 
 ### `corridor canary --write` — recording the proof it earns
 
@@ -591,6 +625,30 @@ The distribution account's seed is the highest-value secret; see
 4. Re-run the read-only integration suite against the anchor to confirm SEP-10
    auth still succeeds with the new account.
 5. Revoke the old key once no run references it.
+
+### The route-option secret and `ROUTE_OPTION_INVALID`
+
+A client can send the route the sender chose as a signed `routeOption` on
+`POST /payments`. The service checks its HMAC-SHA256 signature with
+`CORRIDOR_ROUTE_OPTION_SECRET` (`routeOptionSecret` in `createService`) before the
+engine starts. A locked option's quote is handed to the engine as the run's quote,
+so an expired one is refused rather than re-quoted. This key cannot move money, but
+whoever holds it can make the service accept an option it never issued, so keep it
+out of logs and out of the web bundle.
+
+Any failed check returns `ROUTE_OPTION_INVALID` with a `reason`, and no run starts:
+
+| Status | `reason`               | What to check                                                                  |
+| ------ | ---------------------- | ------------------------------------------------------------------------------ |
+| `422`  | `UNCONFIGURED`         | `CORRIDOR_ROUTE_OPTION_SECRET` is not set on this service                      |
+| `400`  | `INVALID_SIGNATURE`    | The option was signed with another key, or edited after signing                |
+| `409`  | `EXPIRED`              | The option or its locked quote expired; the client should fetch a fresh one    |
+| `422`  | `MISMATCH`             | The option names another corridor, amount or receiving anchor than the payment |
+| `422`  | `INVALID_LOCKED_QUOTE` | A `locked` option arrived without a usable quote                               |
+
+To rotate the secret, set the new value and restart. Options signed with the old key
+then fail with `INVALID_SIGNATURE`. They are short-lived, so a rotation only affects
+senders who were mid-checkout.
 
 ## 4. Database migrations
 
