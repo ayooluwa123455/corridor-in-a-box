@@ -69,7 +69,14 @@ export type CorridorErrorCode =
    * e.g. an unattested anchor. Fail closed: nothing was sent, a fresh run is
    * persisted as `failed`, and the key is spent. Not retryable.
    */
-  | "ROUTE_REFUSED";
+  | "ROUTE_REFUSED"
+  /**
+   * Service-level, never raised by the engine: the signed `routeOption` on
+   * `POST /payments` failed verification (bad or missing signature, expired,
+   * not matching the payment, or no `routeOptionSecret` configured). Nothing
+   * was started; the response's `reason` says which check failed.
+   */
+  | "ROUTE_OPTION_INVALID";
 
 /**
  * Returns true if the error code is a pre-settle gate check refusal.
@@ -158,19 +165,6 @@ export function anchorCustomerIdOf(party: PartyRef): string | undefined {
   return party.anchorCustomerId || party.sep12Id || undefined;
 }
 
-/**
- * Where a `protocol: wallet` route delivers: the recipient's own Stellar
- * account, not an anchor customer record. The corridor declares the asset and
- * network; the caller supplies this per payment because the recipient owns it
- * (RFC 0004 §5).
- */
-export interface WalletDestination {
-  /** Stellar account address (`G...`) that receives the payment. */
-  readonly account: string;
-  readonly memo?: string;
-  readonly memoType?: "text" | "hash" | "id";
-}
-
 export interface PaymentIntent {
   /** Caller-supplied. Two requests with the same key must never settle twice. */
   readonly idempotencyKey: string;
@@ -194,11 +188,21 @@ export interface PaymentIntent {
    */
   readonly destinationFields?: Readonly<Record<string, string>>;
   /**
-   * The recipient's own Stellar wallet, for a `protocol: wallet` corridor.
-   * Required there; ignored by anchor protocols, which pay out off-chain to a
-   * customer the receiving anchor knows.
+   * Recipient Stellar wallet instructions when routing directly to a wallet
+   * (`dest.protocol === "wallet"`): the destination `G...` account and optional
+   * transaction memo supplied by the caller at payment time.
    */
   readonly wallet?: WalletDestination;
+}
+
+/** Per-payment Stellar wallet destination supplied on a `protocol: wallet` intent. */
+export interface WalletDestination {
+  /** Recipient Stellar public key (`G...`). */
+  readonly account: string;
+  /** Optional transaction memo attached to the on-chain payment. */
+  readonly memo?: string;
+  /** Stellar memo encoding when `memo` is present. Defaults to `"text"` when omitted. */
+  readonly memoType?: "text" | "hash" | "id";
 }
 
 // --- Settlement references ----------------------------------------------

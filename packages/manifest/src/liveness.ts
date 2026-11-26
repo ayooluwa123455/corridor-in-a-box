@@ -68,11 +68,8 @@ export function liveness(c: Corridor, now: Date = new Date()): Liveness {
     requiredEndpoint in endpoints
       ? (endpoints as unknown as Record<string, unknown>)[requiredEndpoint]
       : undefined;
-  // A wallet route has no anchor endpoints to require: the delivery address is
-  // supplied per payment by the recipient's own account.
-  const isWallet = protocol === "wallet";
   const hasRequiredEndpoint =
-    isWallet || (typeof requiredEndpointValue === "string" && !!requiredEndpointValue);
+    typeof requiredEndpointValue === "string" && !!requiredEndpointValue;
   const quoteServer = "quote_server" in endpoints ? endpoints.quote_server : undefined;
   const kycServer = "kyc_server" in endpoints ? endpoints.kyc_server : undefined;
   const webAuth = "web_auth" in endpoints ? endpoints.web_auth : undefined;
@@ -138,12 +135,9 @@ export function liveness(c: Corridor, now: Date = new Date()): Liveness {
     );
   }
 
-  // A wallet corridor is verified by construction: there are no remote
-  // endpoints whose existence could be in doubt. The recipient account itself
-  // is checked when the intent arrives, not against a manifest date.
   let state: LivenessState = !hasRequiredEndpoint
     ? "not-runnable"
-    : isWallet || verifiedAt
+    : verifiedAt
       ? "verified"
       : "unverified";
 
