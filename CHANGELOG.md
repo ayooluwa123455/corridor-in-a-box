@@ -7,6 +7,17 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 
 ## [Unreleased]
 
+### Added — SEP-6 corridors are candidates only with `third_party_payout` ([#645](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/645))
+
+- The router's planner step 1, `candidates(request, corridors)` in `@corridor/router`, keeps a
+  `protocol: sep6` corridor only when its manifest sets `third_party_payout: true` (#644), read
+  through `allowsThirdPartyPayout` from `@corridor/manifest`. Without the flag, or with it set to
+  `false`, the corridor goes to `nonMatching` with the reason
+  `SEP6_THIRD_PARTY_PAYOUT_REASON` (also exported), alongside any asset or country mismatch.
+  SEP-31, wallet and custom corridors are unchanged.
+- `corridors/testanchor-sep6.corridor.yaml` records no third-party payout confirmation, so it is
+  no longer a candidate for USD to the US.
+
 ### Added — estimate gap when a business guarantees estimated prices ([#627](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/627))
 
 - With `guaranteeEstimates` on (`EngineDeps` or `ExecuteOptions`, RFC 0004 D4), the engine
