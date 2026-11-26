@@ -15,16 +15,15 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
   `SettlementSubmitter` (so `StellarSettlementSubmitter` keeps the Horizon
   submission and ledger confirmation), and reports `completed` only after that
   confirmation. Concurrent or resumed confirms reuse the one submission.
-- `@corridor/manifest` accepts `dest.protocol: wallet` with no anchor endpoints,
-  and exports `WalletDestinationSchema` for the per-payment recipient account,
-  optional memo and memo type. `liveness()` reports the lane verified by
-  construction and `corridor plan` marks settlement as adapter-led
-  ([#646](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/646)).
-- `PaymentIntent.wallet` carries the recipient's account; it is ignored by
-  anchor protocols and required by the wallet adapter.
+- It builds on the `protocol: wallet` manifest shape and `PaymentIntent.wallet` from
+  [#646](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/646): the recipient
+  account and memo come from `intent.wallet`, and the adapter refuses a corridor whose
+  `dest.asset` or `dest.asset_issuer` differs from what settlement pays, since a wallet
+  route cannot convert assets.
 - `tests/wallet-adapter.test.ts` drives the adapter with a stubbed submitter:
   quote, open, ledger-gated completion, idempotent confirm, submit failure,
-  invalid recipient/memo, refund refusal and asset-mismatch refusal.
+  invalid recipient/memo, refund refusal, and asset, issuer and protocol mismatch refusals.
+
 ### Added — Rate history page ([#601](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/601))
 
 - `docs/rate-history.md` documents rate history per RFC 0004 §3: the four sources (SEP-38

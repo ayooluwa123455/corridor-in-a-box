@@ -1,20 +1,27 @@
 import { describe, expect, it } from "vitest";
 import { Keypair } from "@stellar/stellar-sdk";
-import { liveness, parseCorridor, type Corridor } from "@corridor/manifest";
+import { parseCorridor, type Corridor } from "@corridor/manifest";
 import { fail, ok, type PaymentIntent, type SettlementRef } from "@corridor/types";
 import type { SettlementRequest, SettlementSubmitter } from "@corridor/engine";
 import { WalletAdapter } from "@corridor/stellar";
 
 const ACCOUNT = Keypair.random().publicKey();
 const TX_HASH = "a".repeat(64);
+const ISSUER = Keypair.random().publicKey();
 
 const walletCorridor = {
   id: "wallet-usdc",
   source: { name: "Sending business", asset: "USDC", endpoints: { home_domain: "s.example" } },
-  dest: { protocol: "wallet", name: "Recipient wallet", asset: "USDC" },
+  dest: {
+    protocol: "wallet",
+    name: "Recipient wallet",
+    asset: "USDC",
+    asset_issuer: ISSUER,
+    endpoints: { home_domain: "wallet.example" },
+  },
   fx: { path: ["USD", "USDC", "USD"], who_holds_risk: "sender" },
   compliance: { source_jurisdiction: "US", dest_jurisdiction: "US" },
-  settlement: { network: "testnet", asset_issuer: "GISSUER", bridge_asset: "USDC" },
+  settlement: { network: "testnet", asset_issuer: ISSUER, bridge_asset: "USDC" },
   recovery: {},
 };
 
@@ -72,25 +79,6 @@ function open(adapter: WalletAdapter, intent = intentFor(), corridor = corridorO
     corridor,
   );
 }
-
-describe("protocol: wallet manifest (#646)", () => {
-  it("parses a wallet destination without anchor endpoints", () => {
-    const c = corridorOf();
-    expect(c.dest.protocol).toBe("wallet");
-    expect(c.dest.endpoints.home_domain).toBe("wallet");
-    expect(liveness(c).state).toBe("verified");
-    expect(liveness(c).runnable).toBe(true);
-  });
-
-  it("treats the corridor's declared asset as the wallet delivery asset", () => {
-    const c = corridorOf({
-      ...walletCorridor,
-      dest: { ...walletCorridor.dest, asset: "XLM" },
-      settlement: { ...walletCorridor.settlement, bridge_asset: "XLM" },
-    });
-    expect(c.dest.asset).toBe("XLM");
-  });
-});
 
 describe("WalletAdapter (#647)", () => {
   it("declares adapter-led settlement and no anchor KYC", () => {
@@ -243,5 +231,28 @@ describe("WalletAdapter (#647)", () => {
       dest: { ...walletCorridor.dest, asset: "EURC" },
     });
     expect(() => new WalletAdapter(corridor, { submitter })).toThrow(/cannot convert/);
+  });
+
+  it("refuses a corridor whose dest.asset_issuer differs from the settlement issuer", () => {
+    const { submitter } = stubSubmitter();
+    const corridor = corridorOf({
+      ...walletCorridor,
+      dest: { ...walletCorridor.dest, asset_issuer: Keypair.random().publicKey() },
+    });
+    expect(() => new WalletAdapter(corridor, { submitter })).toThrow(/cannot convert/);
+  });
+
+  it("refuses a corridor whose dest protocol is not wallet", () => {
+    const { submitter } = stubSubmitter();
+    const corridor = corridorOf({
+      ...walletCorridor,
+      dest: {
+        name: "Anchor",
+        asset: "USDC",
+        protocol: "sep31",
+        endpoints: { home_domain: "anchor.example", base_url: "https://anchor.example/sep31" },
+      },
+    });
+    expect(() => new WalletAdapter(corridor, { submitter })).toThrow(/cannot handle protocol/);
   });
 });

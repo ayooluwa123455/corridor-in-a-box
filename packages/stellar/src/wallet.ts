@@ -99,6 +99,22 @@ export class WalletAdapter implements AnchorAdapter {
           `"${bridge}" — a wallet route pays the recipient directly and cannot convert assets`,
       );
     }
+    // The submitter pays with `settlement.asset_issuer`, so a different
+    // `dest.asset_issuer` would deliver an asset the corridor does not declare.
+    const destIssuer =
+      "asset_issuer" in corridor.dest
+        ? (corridor.dest.asset_issuer as string | undefined)
+        : undefined;
+    if (
+      destIssuer !== undefined &&
+      bridge.toUpperCase() !== "XLM" &&
+      destIssuer !== corridor.settlement.asset_issuer
+    ) {
+      throw new Error(
+        `WalletAdapter: corridor ${corridor.id} declares dest.asset_issuer ${destIssuer} but ` +
+          `settles with ${corridor.settlement.asset_issuer} — a wallet route cannot convert assets`,
+      );
+    }
     this.name = corridor.dest.name;
     this.corridor = corridor;
     this.submitter = opts.submitter;
