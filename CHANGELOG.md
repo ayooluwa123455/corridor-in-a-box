@@ -23,6 +23,14 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 - `tests/wallet-adapter.test.ts` drives the adapter with a stubbed submitter:
   quote, open, ledger-gated completion, idempotent confirm, submit failure,
   invalid recipient/memo, refund refusal, and asset, issuer and protocol mismatch refusals.
+### Added — Planner step 1: `candidates()` by destination asset and country ([#604](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/604))
+
+- `candidates(request, corridors)` in `@corridor/router` returns every configured corridor whose
+  destination asset and country match the request, plus every other corridor with the reason it
+  did not match (RFC 0004 planner step 1). Configuration only: no registry, network or pricing.
+- Optional `dest.country` manifest field (ISO 3166-1 alpha-2, validated in `@corridor/manifest`).
+  When it is absent, the planner falls back to `compliance.dest_jurisdiction`, so existing
+  manifests and their hashes are unchanged.
 
 ### Added — Rate history page ([#601](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/601))
 

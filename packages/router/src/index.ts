@@ -128,6 +128,10 @@ export {
   type RegistryResolverOptions,
 } from "./registry-resolver";
 
+// Planner step 1: corridors whose declared destination matches the request.
+export { candidates } from "./candidates";
+export type { CandidateRequest, CandidatesResult, NonMatchingCorridor } from "./candidates";
+
 // Planner step: keep only candidates the registry can vouch for, with reasons
 // for the rest. Same rules as RegistryRouteResolver, via checkAttestation.
 export {

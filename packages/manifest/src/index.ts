@@ -55,6 +55,15 @@ const AnchorBaseSchema = z.object({
   /** Asset this anchor deals in at this leg. Source side: typically "USDC".
    *  Dest side: the off-chain payout asset, e.g. "iso4217:ARS". */
   asset: z.string().min(1),
+  /**
+   * Destination country, ISO 3166-1 alpha-2 (e.g. "NG"). Optional so existing
+   * manifests are unchanged and hashes stay stable; the planner falls back to
+   * `compliance.dest_jurisdiction` when it is absent.
+   */
+  country: z
+    .string()
+    .regex(/^[A-Z]{2}$/, "expected ISO 3166-1 alpha-2 country code")
+    .optional(),
 });
 
 export const AnchorSchema = AnchorBaseSchema.extend({ endpoints: AnchorEndpointsSchema });
