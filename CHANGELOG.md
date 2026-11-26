@@ -23,6 +23,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
 - `tests/wallet-adapter.test.ts` drives the adapter with a stubbed submitter:
   quote, open, ledger-gated completion, idempotent confirm, submit failure,
   invalid recipient/memo, refund refusal, and asset, issuer and protocol mismatch refusals.
+
 ### Added — Daily rate summaries on the web app ([#596](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/596))
 
 - A `/rates` page lists the latest validated daily summary per pair and source (date, source,
