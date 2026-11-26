@@ -17,6 +17,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once it reache
   SEP-31, wallet and custom corridors are unchanged.
 - `corridors/testanchor-sep6.corridor.yaml` records no third-party payout confirmation, so it is
   no longer a candidate for USD to the US.
+
 ### Added — Rate history chart per currency pair ([#600](https://github.com/corridor-in-a-box/corridor-in-a-box/issues/600))
 
 - The home page charts every pair, and each corridor page charts its own pair, from the daily
